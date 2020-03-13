@@ -1,6 +1,7 @@
 use defaultmap::DefaultHashMap;
 
 #[derive(Debug)]
+#[derive(PartialEq)]
 pub struct Game<'a> {
     team1: &'a str,
     team1_score: u8,
@@ -45,5 +46,48 @@ fn get_winner<'a>(game: &'a Game) -> Option<&'a str> {
         Some(game.team2)
     } else {
         None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_team() {
+        assert_eq!(parse_team("Team1 10"), ("Team1", 10));
+        assert_eq!(parse_team("Hello world 10"), ("Hello world", 10));
+    }
+
+    #[test]
+    fn test_parse_game() {
+        assert_eq!(
+            parse_game("Team1 10, Hello world 20"),
+            Game { team1: "Team1", team1_score: 10, team2: "Hello world", team2_score: 20 }
+        );
+    }
+
+    #[test]
+    fn test_get_winner() {
+        let game1 = Game { team1: "A", team1_score: 10, team2: "B", team2_score: 20 };
+        assert_eq!(get_winner(&game1), Some("B"));
+        let game2 = Game { team1: "A", team1_score: 10, team2: "B", team2_score: 10 };
+        assert_eq!(get_winner(&game2), None);
+    }
+
+    #[test]
+    fn test_get_rankings() {
+        let games = vec![
+            Game { team1: "A", team1_score: 10, team2: "B", team2_score: 20 },
+            Game { team1: "C", team1_score: 10, team2: "D", team2_score: 10 },
+            Game { team1: "A", team1_score: 20, team2: "D", team2_score: 10 },
+            Game { team1: "B", team1_score: 20, team2: "C", team2_score: 10 },
+        ];
+        let rankings = get_rankings(games.as_slice());
+
+        assert_eq!(rankings["A"], 3);
+        assert_eq!(rankings["B"], 6);
+        assert_eq!(rankings["C"], 1);
+        assert_eq!(rankings["D"], 1);
     }
 }
