@@ -5,3 +5,4 @@ authors = ["Brandon Chinn <brandon@leapyear.io>"]
 edition = "2018"
 
 [dependencies]
+defaultmap = "0.4.0"

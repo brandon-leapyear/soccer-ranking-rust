@@ -13,6 +13,7 @@ fn main() {
     let file = &args[1];
     let content = fs::read_to_string(file).expect("Could not read input file");
 
-    let games = content.lines().map(lib::parse_game);
-    println!("{:#?}", games.collect::<Vec<lib::Game>>());
+    let games: Vec<lib::Game> = content.lines().map(lib::parse_game).collect();
+    let scores = lib::get_rankings(games.as_slice());
+    println!("{:?}", scores);
 }
