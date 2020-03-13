@@ -1,4 +1,5 @@
 use defaultmap::DefaultHashMap;
+use std::collections::HashMap;
 
 #[derive(Debug)]
 #[derive(PartialEq)]
@@ -23,12 +24,13 @@ fn parse_team(s: &str) -> (&str, u8) {
     (name, score)
 }
 
-pub fn get_rankings<'a>(games: &'a [Game<'a>]) -> DefaultHashMap<&'a str, u8> {
+pub fn get_rankings<'a>(games: &'a [Game<'a>]) -> HashMap<&'a str, u8> {
     let mut rankings = DefaultHashMap::new(0);
     for game in games {
         match get_winner(game) {
-            Some(winner) => {
-                rankings[winner] += 3;
+            Some(result) => {
+                rankings[result.winner] += 3;
+                rankings[result.loser] += 0; // initialize if not already initialized
             },
             None => {
                 rankings[game.team1] += 1;
@@ -36,14 +38,21 @@ pub fn get_rankings<'a>(games: &'a [Game<'a>]) -> DefaultHashMap<&'a str, u8> {
             }
         }
     }
-    rankings
+    rankings.into()
 }
 
-fn get_winner<'a>(game: &'a Game) -> Option<&'a str> {
+#[derive(Debug)]
+#[derive(PartialEq)]
+struct GameResult<'a> {
+    winner: &'a str,
+    loser: &'a str,
+}
+
+fn get_winner<'a>(game: &'a Game<'a>) -> Option<GameResult<'a>> {
     if game.team1_score > game.team2_score {
-        Some(game.team1)
+        Some(GameResult { winner: game.team1, loser: game.team2 })
     } else if game.team1_score < game.team2_score {
-        Some(game.team2)
+        Some(GameResult { winner: game.team2, loser: game.team1 })
     } else {
         None
     }
@@ -70,7 +79,7 @@ mod tests {
     #[test]
     fn test_get_winner() {
         let game1 = Game { team1: "A", team1_score: 10, team2: "B", team2_score: 20 };
-        assert_eq!(get_winner(&game1), Some("B"));
+        assert_eq!(get_winner(&game1), Some(GameResult { winner: "B", loser: "A" }));
         let game2 = Game { team1: "A", team1_score: 10, team2: "B", team2_score: 10 };
         assert_eq!(get_winner(&game2), None);
     }
@@ -82,12 +91,14 @@ mod tests {
             Game { team1: "C", team1_score: 10, team2: "D", team2_score: 10 },
             Game { team1: "A", team1_score: 20, team2: "D", team2_score: 10 },
             Game { team1: "B", team1_score: 20, team2: "C", team2_score: 10 },
+            Game { team1: "C", team1_score: 20, team2: "E", team2_score: 10 },
         ];
         let rankings = get_rankings(games.as_slice());
 
         assert_eq!(rankings["A"], 3);
         assert_eq!(rankings["B"], 6);
-        assert_eq!(rankings["C"], 1);
+        assert_eq!(rankings["C"], 4);
         assert_eq!(rankings["D"], 1);
+        assert_eq!(rankings["E"], 0);
     }
 }
