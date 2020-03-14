@@ -27,16 +27,21 @@ fn parse_team(s: &str) -> (&str, u8) {
 #[derive(Clone, Debug, PartialEq)]
 pub struct TeamScores {
     league_score: u8,
+    goal_diff: i32,
 }
 
 pub fn get_scores<'a>(games: &'a [Game<'a>]) -> HashMap<&'a str, TeamScores> {
-    let mut scores = DefaultHashMap::new(TeamScores { league_score: 0 });
+    let mut scores = DefaultHashMap::new(TeamScores { league_score: 0, goal_diff: 0 });
 
     for game in games {
         match get_winner(game) {
             Some(result) => {
-                scores[result.winner].league_score += 3;
-                scores[result.loser].league_score += 0; // initialize if not already initialized
+                let winner = &mut scores[result.winner];
+                winner.league_score += 3;
+                winner.goal_diff += result.goal_diff;
+
+                let loser = &mut scores[result.loser];
+                loser.goal_diff -= result.goal_diff;
             },
             None => {
                 scores[game.team1].league_score += 1;
@@ -52,13 +57,15 @@ pub fn get_scores<'a>(games: &'a [Game<'a>]) -> HashMap<&'a str, TeamScores> {
 struct GameResult<'a> {
     winner: &'a str,
     loser: &'a str,
+    goal_diff: i32,
 }
 
 fn get_winner<'a>(game: &'a Game<'a>) -> Option<GameResult<'a>> {
-    if game.team1_score > game.team2_score {
-        Some(GameResult { winner: game.team1, loser: game.team2 })
-    } else if game.team1_score < game.team2_score {
-        Some(GameResult { winner: game.team2, loser: game.team1 })
+    let goal_diff = game.team1_score as i32 - game.team2_score as i32;
+    if goal_diff > 0 {
+        Some(GameResult { winner: game.team1, loser: game.team2, goal_diff })
+    } else if goal_diff < 0 {
+        Some(GameResult { winner: game.team2, loser: game.team1, goal_diff: -goal_diff })
     } else {
         None
     }
@@ -114,7 +121,9 @@ mod tests {
     #[test]
     fn test_get_winner() {
         let game1 = Game { team1: "A", team1_score: 10, team2: "B", team2_score: 20 };
-        assert_eq!(get_winner(&game1), Some(GameResult { winner: "B", loser: "A" }));
+        assert_eq!(get_winner(&game1), Some(GameResult { winner: "B", loser: "A", goal_diff: 10 }));
+        let game1 = Game { team1: "A", team1_score: 20, team2: "B", team2_score: 0 };
+        assert_eq!(get_winner(&game1), Some(GameResult { winner: "A", loser: "B", goal_diff: 20 }));
         let game2 = Game { team1: "A", team1_score: 10, team2: "B", team2_score: 10 };
         assert_eq!(get_winner(&game2), None);
     }
@@ -130,21 +139,21 @@ mod tests {
         ];
         let scores = get_scores(games.as_slice());
 
-        assert_eq!(scores["A"], TeamScores { league_score: 3 });
-        assert_eq!(scores["B"], TeamScores { league_score: 6 });
-        assert_eq!(scores["C"], TeamScores { league_score: 4 });
-        assert_eq!(scores["D"], TeamScores { league_score: 1 });
-        assert_eq!(scores["E"], TeamScores { league_score: 0 });
+        assert_eq!(scores["A"], TeamScores { league_score: 3, goal_diff: 0 });
+        assert_eq!(scores["B"], TeamScores { league_score: 6, goal_diff: 20 });
+        assert_eq!(scores["C"], TeamScores { league_score: 4, goal_diff: 0 });
+        assert_eq!(scores["D"], TeamScores { league_score: 1, goal_diff: -10 });
+        assert_eq!(scores["E"], TeamScores { league_score: 0, goal_diff: -10 });
     }
 
     #[test]
     fn test_get_rankings() {
         let scores = [
-            ("D", TeamScores { league_score: 10 }),
-            ("A", TeamScores { league_score: 10 }),
-            ("B", TeamScores { league_score: 20 }),
-            ("C", TeamScores { league_score: 15 }),
-            ("E", TeamScores { league_score: 0 }),
+            ("D", TeamScores { league_score: 10, goal_diff: 0 }),
+            ("A", TeamScores { league_score: 10, goal_diff: 0 }),
+            ("B", TeamScores { league_score: 20, goal_diff: 0 }),
+            ("C", TeamScores { league_score: 15, goal_diff: 0 }),
+            ("E", TeamScores { league_score: 0, goal_diff: 0 }),
         ].iter().cloned().collect();
 
         assert_eq!(get_rankings(&scores), vec![
