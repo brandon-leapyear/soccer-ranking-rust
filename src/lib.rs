@@ -65,26 +65,19 @@ pub struct TeamRank<'a> {
 }
 
 pub fn get_rankings<'a>(rankings: &HashMap<&'a str, u8>) -> Vec<TeamRank<'a>> {
-    let mut games: Vec<(&&str, &u8)> = rankings.iter().collect();
-    games.sort_unstable_by_key(|(_, score)| -1 * (**score as i16));
-
-    games
-        .into_iter()
-        .group_by(|(_, score)| *score)
-        .into_iter()
+    rankings
+        .iter()
+        .sorted_by_key(|(&name, &score)| (-1 * score as i16, name))
         .enumerate()
-        .flat_map(|(rank, group)| {
-            let mut tied_games: Vec<(&&str, &u8)> = group.1.into_iter().collect();
-            tied_games.sort_unstable_by_key(|(name, _)| *name);
-            tied_games
-                .into_iter()
+        .map(|(i, (&name, &score))| TeamRank { rank: i as u8 + 1, name, score })
+        .group_by(|team| team.score)
+        .into_iter()
+        .map(|(_, tied_teams)|
+            tied_teams
                 .enumerate()
-                .map(|(_, game)| {
-                    let (name, score) = game;
-                    TeamRank { rank: (rank + 1) as u8, name: name, score: *score }
-                })
-                .collect::<Vec<TeamRank>>()
-        })
+                .map(|(i, team)| TeamRank { rank: team.rank - i as u8, ..team })
+        )
+        .flatten()
         .collect()
 }
 
@@ -151,7 +144,7 @@ mod tests {
             TeamRank { rank: 2, name: "C", score: 15 },
             TeamRank { rank: 3, name: "A", score: 10 },
             TeamRank { rank: 3, name: "D", score: 10 },
-            TeamRank { rank: 4, name: "E", score: 0 },
+            TeamRank { rank: 5, name: "E", score: 0 },
         ]);
     }
 
