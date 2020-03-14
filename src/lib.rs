@@ -76,6 +76,7 @@ pub struct TeamRank<'a> {
     rank: u8,
     name: &'a str,
     score: u8,
+    goal_diff: i32,
 }
 
 pub fn get_rankings<'a>(rankings: &HashMap<&'a str, TeamScores>) -> Vec<TeamRank<'a>> {
@@ -83,7 +84,14 @@ pub fn get_rankings<'a>(rankings: &HashMap<&'a str, TeamScores>) -> Vec<TeamRank
         .iter()
         .sorted_by_key(|(&name, scores)| (-1 * scores.league_score as i16, name))
         .enumerate()
-        .map(|(i, (&name, scores))| TeamRank { rank: i as u8 + 1, name, score: scores.league_score })
+        .map(|(i, (&name, scores))|
+            TeamRank {
+                rank: i as u8 + 1,
+                name,
+                score: scores.league_score,
+                goal_diff: scores.goal_diff
+            }
+        )
         .group_by(|team| team.score)
         .into_iter()
         .map(|(_, tied_teams)|
@@ -95,7 +103,7 @@ pub fn get_rankings<'a>(rankings: &HashMap<&'a str, TeamScores>) -> Vec<TeamRank
         .collect()
 }
 
-pub fn display_rank<'a>(team: &TeamRank<'a>) -> String {
+pub fn display_rank_pt1<'a>(team: &TeamRank<'a>) -> String {
     let label = if team.score == 1 { "pt" } else { "pts" };
     format!("{}. {}, {} {}", team.rank, team.name, team.score, label)
 }
@@ -147,7 +155,7 @@ mod tests {
     }
 
     #[test]
-    fn test_get_rankings() {
+    fn test_get_rankings_pt1() {
         let scores = [
             ("D", TeamScores { league_score: 10, goal_diff: 0 }),
             ("A", TeamScores { league_score: 10, goal_diff: 0 }),
@@ -157,23 +165,23 @@ mod tests {
         ].iter().cloned().collect();
 
         assert_eq!(get_rankings(&scores), vec![
-            TeamRank { rank: 1, name: "B", score: 20 },
-            TeamRank { rank: 2, name: "C", score: 15 },
-            TeamRank { rank: 3, name: "A", score: 10 },
-            TeamRank { rank: 3, name: "D", score: 10 },
-            TeamRank { rank: 5, name: "E", score: 0 },
+            TeamRank { rank: 1, name: "B", score: 20, goal_diff: 0 },
+            TeamRank { rank: 2, name: "C", score: 15, goal_diff: 0 },
+            TeamRank { rank: 3, name: "A", score: 10, goal_diff: 0 },
+            TeamRank { rank: 3, name: "D", score: 10, goal_diff: 0 },
+            TeamRank { rank: 5, name: "E", score: 0, goal_diff: 0 },
         ]);
     }
 
     #[test]
-    fn test_display_rank() {
-        let rank = TeamRank { rank: 1, name: "Team 1", score: 0 };
-        assert_eq!(display_rank(&rank), "1. Team 1, 0 pts");
+    fn test_display_rank_pt1() {
+        let rank = TeamRank { rank: 1, name: "Team 1", score: 0, goal_diff: 0 };
+        assert_eq!(display_rank_pt1(&rank), "1. Team 1, 0 pts");
 
-        let rank = TeamRank { rank: 1, name: "My Team", score: 1 };
-        assert_eq!(display_rank(&rank), "1. My Team, 1 pt");
+        let rank = TeamRank { rank: 1, name: "My Team", score: 1, goal_diff: 0 };
+        assert_eq!(display_rank_pt1(&rank), "1. My Team, 1 pt");
 
-        let rank = TeamRank { rank: 2, name: "My Other Team", score: 2 };
-        assert_eq!(display_rank(&rank), "2. My Other Team, 2 pts");
+        let rank = TeamRank { rank: 2, name: "My Other Team", score: 2, goal_diff: 0 };
+        assert_eq!(display_rank_pt1(&rank), "2. My Other Team, 2 pts");
     }
 }
