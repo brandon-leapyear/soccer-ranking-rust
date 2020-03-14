@@ -1,4 +1,5 @@
 use defaultmap::DefaultHashMap;
+use itertools::Itertools;
 use std::collections::HashMap;
 
 #[derive(Debug)]
@@ -58,6 +59,37 @@ fn get_winner<'a>(game: &'a Game<'a>) -> Option<GameResult<'a>> {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub struct TeamRank<'a> {
+    rank: u8,
+    name: &'a str,
+    score: u8,
+}
+
+pub fn order_rankings<'a>(rankings: &HashMap<&'a str, u8>) -> Vec<TeamRank<'a>> {
+    let mut games: Vec<(&&str, &u8)> = rankings.iter().collect();
+    games.sort_unstable_by_key(|(_, score)| -1 * (**score as i16));
+
+    games
+        .into_iter()
+        .group_by(|(_, score)| *score)
+        .into_iter()
+        .enumerate()
+        .flat_map(|(rank, group)| {
+            let mut tied_games: Vec<(&&str, &u8)> = group.1.into_iter().collect();
+            tied_games.sort_unstable_by_key(|(name, _)| *name);
+            tied_games
+                .into_iter()
+                .enumerate()
+                .map(|(_, game)| {
+                    let (name, score) = game;
+                    TeamRank { rank: (rank + 1) as u8, name: name, score: *score }
+                })
+                .collect::<Vec<TeamRank>>()
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -100,5 +132,23 @@ mod tests {
         assert_eq!(rankings["C"], 4);
         assert_eq!(rankings["D"], 1);
         assert_eq!(rankings["E"], 0);
+    }
+
+    #[test]
+    fn test_order_rankings() {
+        let rankings = [
+            ("D", 10),
+            ("A", 10),
+            ("B", 20),
+            ("C", 15),
+            ("E", 0),
+        ].iter().cloned().collect();
+        assert_eq!(order_rankings(&rankings), vec![
+            TeamRank { rank: 1, name: "B", score: 20 },
+            TeamRank { rank: 2, name: "C", score: 15 },
+            TeamRank { rank: 3, name: "A", score: 10 },
+            TeamRank { rank: 3, name: "D", score: 10 },
+            TeamRank { rank: 4, name: "E", score: 0 },
+        ]);
     }
 }
