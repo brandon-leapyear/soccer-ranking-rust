@@ -88,6 +88,11 @@ pub fn get_rankings<'a>(rankings: &HashMap<&'a str, u8>) -> Vec<TeamRank<'a>> {
         .collect()
 }
 
+pub fn display_rank<'a>(team: &TeamRank<'a>) -> String {
+    let label = if team.score == 1 { "pt" } else { "pts" };
+    format!("{}. {}, {} {}", team.rank, team.name, team.score, label)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -148,5 +153,17 @@ mod tests {
             TeamRank { rank: 3, name: "D", score: 10 },
             TeamRank { rank: 4, name: "E", score: 0 },
         ]);
+    }
+
+    #[test]
+    fn test_display_rank() {
+        let rank = TeamRank { rank: 1, name: "Team 1", score: 0 };
+        assert_eq!(display_rank(&rank), "1. Team 1, 0 pts");
+
+        let rank = TeamRank { rank: 1, name: "My Team", score: 1 };
+        assert_eq!(display_rank(&rank), "1. My Team, 1 pt");
+
+        let rank = TeamRank { rank: 2, name: "My Other Team", score: 2 };
+        assert_eq!(display_rank(&rank), "2. My Other Team, 2 pts");
     }
 }

@@ -16,5 +16,7 @@ fn main() {
     let games: Vec<lib::Game> = content.lines().map(lib::parse_game).collect();
     let scores = lib::get_scores(games.as_slice());
     let rankings = lib::get_rankings(&scores);
-    println!("{:?}", rankings);
+    for team in &rankings {
+        println!("{}", lib::display_rank(team));
+    }
 }
