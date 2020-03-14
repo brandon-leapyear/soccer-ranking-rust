@@ -25,21 +25,21 @@ fn parse_team(s: &str) -> (&str, u8) {
     (name, score)
 }
 
-pub fn get_rankings<'a>(games: &'a [Game<'a>]) -> HashMap<&'a str, u8> {
-    let mut rankings = DefaultHashMap::new(0);
+pub fn get_scores<'a>(games: &'a [Game<'a>]) -> HashMap<&'a str, u8> {
+    let mut scores = DefaultHashMap::new(0);
     for game in games {
         match get_winner(game) {
             Some(result) => {
-                rankings[result.winner] += 3;
-                rankings[result.loser] += 0; // initialize if not already initialized
+                scores[result.winner] += 3;
+                scores[result.loser] += 0; // initialize if not already initialized
             },
             None => {
-                rankings[game.team1] += 1;
-                rankings[game.team2] += 1;
+                scores[game.team1] += 1;
+                scores[game.team2] += 1;
             }
         }
     }
-    rankings.into()
+    scores.into()
 }
 
 #[derive(Debug)]
@@ -66,7 +66,7 @@ pub struct TeamRank<'a> {
     score: u8,
 }
 
-pub fn order_rankings<'a>(rankings: &HashMap<&'a str, u8>) -> Vec<TeamRank<'a>> {
+pub fn get_rankings<'a>(rankings: &HashMap<&'a str, u8>) -> Vec<TeamRank<'a>> {
     let mut games: Vec<(&&str, &u8)> = rankings.iter().collect();
     games.sort_unstable_by_key(|(_, score)| -1 * (**score as i16));
 
@@ -117,7 +117,7 @@ mod tests {
     }
 
     #[test]
-    fn test_get_rankings() {
+    fn test_get_scores() {
         let games = vec![
             Game { team1: "A", team1_score: 10, team2: "B", team2_score: 20 },
             Game { team1: "C", team1_score: 10, team2: "D", team2_score: 10 },
@@ -125,25 +125,25 @@ mod tests {
             Game { team1: "B", team1_score: 20, team2: "C", team2_score: 10 },
             Game { team1: "C", team1_score: 20, team2: "E", team2_score: 10 },
         ];
-        let rankings = get_rankings(games.as_slice());
+        let scores = get_scores(games.as_slice());
 
-        assert_eq!(rankings["A"], 3);
-        assert_eq!(rankings["B"], 6);
-        assert_eq!(rankings["C"], 4);
-        assert_eq!(rankings["D"], 1);
-        assert_eq!(rankings["E"], 0);
+        assert_eq!(scores["A"], 3);
+        assert_eq!(scores["B"], 6);
+        assert_eq!(scores["C"], 4);
+        assert_eq!(scores["D"], 1);
+        assert_eq!(scores["E"], 0);
     }
 
     #[test]
-    fn test_order_rankings() {
-        let rankings = [
+    fn test_get_rankings() {
+        let scores = [
             ("D", 10),
             ("A", 10),
             ("B", 20),
             ("C", 15),
             ("E", 0),
         ].iter().cloned().collect();
-        assert_eq!(order_rankings(&rankings), vec![
+        assert_eq!(get_rankings(&scores), vec![
             TeamRank { rank: 1, name: "B", score: 20 },
             TeamRank { rank: 2, name: "C", score: 15 },
             TeamRank { rank: 3, name: "A", score: 10 },

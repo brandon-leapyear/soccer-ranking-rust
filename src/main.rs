@@ -14,7 +14,7 @@ fn main() {
     let content = fs::read_to_string(file).expect("Could not read input file");
 
     let games: Vec<lib::Game> = content.lines().map(lib::parse_game).collect();
-    let rankings = lib::get_rankings(games.as_slice());
-    let ranked_games = lib::order_rankings(&rankings);
-    println!("{:?}", ranked_games);
+    let scores = lib::get_scores(games.as_slice());
+    let rankings = lib::get_rankings(&scores);
+    println!("{:?}", rankings);
 }
