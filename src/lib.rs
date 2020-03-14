@@ -2,8 +2,7 @@ use defaultmap::DefaultHashMap;
 use itertools::Itertools;
 use std::collections::HashMap;
 
-#[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Game<'a> {
     team1: &'a str,
     team1_score: u8,
@@ -42,8 +41,7 @@ pub fn get_scores<'a>(games: &'a [Game<'a>]) -> HashMap<&'a str, u8> {
     scores.into()
 }
 
-#[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 struct GameResult<'a> {
     winner: &'a str,
     loser: &'a str,
