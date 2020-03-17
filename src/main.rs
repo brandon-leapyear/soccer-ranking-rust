@@ -21,4 +21,10 @@ fn main() {
     for team in &rankings {
         println!("{}", lib::display_rank_pt1(team));
     }
+
+    println!("Part 2");
+    let rankings = lib::get_rankings(&scores, lib::RankStrategy::ScoreThenGoalDiff);
+    for team in &rankings {
+        println!("{}", lib::display_rank_pt2(team));
+    }
 }

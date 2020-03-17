@@ -123,6 +123,11 @@ pub fn display_rank_pt1<'a>(team: &TeamRank<'a>) -> String {
     format!("{}. {}, {} {}", team.rank, team.name, team.score, label)
 }
 
+pub fn display_rank_pt2<'a>(team: &TeamRank<'a>) -> String {
+    let label = if team.score == 1 { "pt" } else { "pts" };
+    format!("{}. {}, {} {}, gd: {}", team.rank, team.name, team.score, label, team.goal_diff)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
