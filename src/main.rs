@@ -17,7 +17,7 @@ fn main() {
     let scores = lib::get_scores(games.as_slice());
 
     println!("Part 1");
-    let rankings = lib::get_rankings(&scores);
+    let rankings = lib::get_rankings(&scores, lib::RankStrategy::Score);
     for team in &rankings {
         println!("{}", lib::display_rank_pt1(team));
     }

@@ -1,5 +1,6 @@
 use defaultmap::DefaultHashMap;
 use itertools::Itertools;
+use std::cmp::Reverse;
 use std::collections::HashMap;
 
 #[derive(Debug, PartialEq)]
@@ -79,28 +80,42 @@ pub struct TeamRank<'a> {
     goal_diff: i32,
 }
 
-pub fn get_rankings<'a>(rankings: &HashMap<&'a str, TeamScores>) -> Vec<TeamRank<'a>> {
-    rankings
+pub enum RankStrategy {
+    // Rank by score
+    Score,
+    // Rank by score, then goal differential
+    ScoreThenGoalDiff,
+}
+
+pub fn get_rankings<'a>(rankings: &HashMap<&'a str, TeamScores>, rank_strategy: RankStrategy) -> Vec<TeamRank<'a>> {
+    let get_score = |scores: &TeamScores| {
+        match rank_strategy {
+            RankStrategy::Score => (scores.league_score, 0),
+            RankStrategy::ScoreThenGoalDiff => (scores.league_score, scores.goal_diff),
+        }
+    };
+
+    let sorted_rankings = rankings
         .iter()
-        .sorted_by_key(|(&name, scores)| (-1 * scores.league_score as i16, name))
-        .enumerate()
-        .map(|(i, (&name, scores))|
-            TeamRank {
-                rank: i as u8 + 1,
+        .sorted_by_key(|(&name, scores)| (Reverse(get_score(scores)), name));
+
+    let mut length = 0;
+    let mut result = vec![];
+
+    for (_, tied_teams) in sorted_rankings.group_by(|(_, scores)| get_score(scores)).into_iter() {
+        for (i, team) in tied_teams.enumerate() {
+            let (&name, scores) = team;
+            result.push(TeamRank {
+                rank: (length - i + 1) as u8,
                 name,
                 score: scores.league_score,
-                goal_diff: scores.goal_diff
-            }
-        )
-        .group_by(|team| team.score)
-        .into_iter()
-        .map(|(_, tied_teams)|
-            tied_teams
-                .enumerate()
-                .map(|(i, team)| TeamRank { rank: team.rank - i as u8, ..team })
-        )
-        .flatten()
-        .collect()
+                goal_diff: scores.goal_diff,
+            });
+            length += 1;
+        }
+    }
+
+    result
 }
 
 pub fn display_rank_pt1<'a>(team: &TeamRank<'a>) -> String {
@@ -164,9 +179,28 @@ mod tests {
             ("E", TeamScores { league_score: 0, goal_diff: 0 }),
         ].iter().cloned().collect();
 
-        assert_eq!(get_rankings(&scores), vec![
+        assert_eq!(get_rankings(&scores, RankStrategy::Score), vec![
             TeamRank { rank: 1, name: "B", score: 20, goal_diff: 0 },
             TeamRank { rank: 2, name: "C", score: 15, goal_diff: 0 },
+            TeamRank { rank: 3, name: "A", score: 10, goal_diff: 0 },
+            TeamRank { rank: 3, name: "D", score: 10, goal_diff: 0 },
+            TeamRank { rank: 5, name: "E", score: 0, goal_diff: 0 },
+        ]);
+    }
+
+    #[test]
+    fn test_get_rankings_pt2() {
+        let scores = [
+            ("D", TeamScores { league_score: 10, goal_diff: 0 }),
+            ("A", TeamScores { league_score: 10, goal_diff: 0 }),
+            ("B", TeamScores { league_score: 10, goal_diff: 10 }),
+            ("C", TeamScores { league_score: 15, goal_diff: 0 }),
+            ("E", TeamScores { league_score: 0, goal_diff: 0 }),
+        ].iter().cloned().collect();
+
+        assert_eq!(get_rankings(&scores, RankStrategy::ScoreThenGoalDiff), vec![
+            TeamRank { rank: 1, name: "C", score: 15, goal_diff: 0 },
+            TeamRank { rank: 2, name: "B", score: 10, goal_diff: 10 },
             TeamRank { rank: 3, name: "A", score: 10, goal_diff: 0 },
             TeamRank { rank: 3, name: "D", score: 10, goal_diff: 0 },
             TeamRank { rank: 5, name: "E", score: 0, goal_diff: 0 },
